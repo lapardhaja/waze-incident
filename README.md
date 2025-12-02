@@ -154,6 +154,20 @@ The `Procfile` is included for Heroku deployment.
 - **`data/incidents_master.json`**: Complete database of all unique incidents (grows over time)
 - **`data/incidents_latest.json`**: Latest snapshot used by the heatmap (same data, regenerated on each save)
 
+### ⚠️ Important: Render.com Data Persistence
+
+**Render's filesystem is ephemeral** - data files are lost when the service restarts or redeploys. This means:
+
+- ✅ Data **will update** while the app is running
+- ❌ Data **will be lost** on restart/redeploy (starts fresh each time)
+
+**For persistent storage on Render:**
+- Use **Render Disk** (paid feature) for persistent file storage
+- Or integrate with an external database (PostgreSQL, MongoDB, etc.)
+- Or use cloud storage (S3, Google Cloud Storage, etc.)
+
+For local development, data persists normally.
+
 ## Troubleshooting
 
 - **"Error: config.json not found"**: Create `config.json` or set `WAZE_API_URL` environment variable
