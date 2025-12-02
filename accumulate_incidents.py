@@ -183,23 +183,23 @@ class IncidentAccumulator:
     
     def save_master(self):
         """Save the master incidents list to GitHub Gist or file."""
+        # Always save latest file for heatmap (required for frontend)
+        latest_file = 'data/incidents_latest.json'
+        os.makedirs(os.path.dirname(latest_file) if os.path.dirname(latest_file) else '.', exist_ok=True)
+        with open(latest_file, 'w') as f:
+            json.dump(self.master_incidents, f, indent=2)
+        
         if self.use_gist:
+            # Save to Gist for persistence
             if self._save_to_gist(self.master_incidents):
                 print(f"✓ Saved {len(self.master_incidents)} incidents to GitHub Gist")
             else:
                 print("⚠ Failed to save to Gist")
         else:
-            # File storage mode
+            # File storage mode - also save master file
             os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
-            
             with open(self.master_file, 'w') as f:
                 json.dump(self.master_incidents, f, indent=2)
-            
-            # Also save as latest for the heatmap
-            latest_file = 'data/incidents_latest.json'
-            with open(latest_file, 'w') as f:
-                json.dump(self.master_incidents, f, indent=2)
-            
             print(f"Saved {len(self.master_incidents)} incidents to master file")
     
     def get_statistics(self) -> Dict:
