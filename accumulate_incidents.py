@@ -6,7 +6,6 @@ Maintains a master incidents database that grows over time.
 import json
 import os
 from datetime import datetime
-from fetch_waze_data import WazeDataFetcher
 from typing import List, Dict, Set
 
 
@@ -147,86 +146,4 @@ class IncidentAccumulator:
             }
         
         return stats
-
-
-def main():
-    """Main function to fetch and accumulate incidents."""
-    import time
-    
-    # Load configuration
-    config_file = 'config.json'
-    
-    if os.path.exists(config_file):
-        with open(config_file, 'r') as f:
-            config = json.load(f)
-            api_url = config.get('waze_api_url')
-            interval = config.get('update_interval_seconds', 120)
-    else:
-        api_url = "https://www.waze.com/partnerhub-api/partners/11533082963/waze-feeds/693756bf-6eb5-409b-bfe4-c5472f4e3a73?format=1"
-        interval = 120
-        print(f"Using default settings. Update config.json to customize.")
-    
-    if not api_url:
-        print("Error: No API URL configured. Please set waze_api_url in config.json")
-        return
-    
-    # Initialize accumulator
-    accumulator = IncidentAccumulator()
-    
-    # Initialize fetcher
-    fetcher = WazeDataFetcher(api_url)
-    
-    print(f"Starting continuous incident accumulation (interval: {interval} seconds)")
-    print("Press Ctrl+C to stop\n")
-    
-    try:
-        while True:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Fetching new incidents...")
-            
-            # Fetch new data
-            data = fetcher.fetch_data()
-            if data is None:
-                print("Failed to fetch data from API\n")
-                time.sleep(interval)
-                continue
-            
-            # Extract incidents
-            new_incidents = fetcher.extract_incidents(data)
-            print(f"Fetched {len(new_incidents)} incidents from API")
-            
-            # Add to accumulator
-            result = accumulator.add_incidents(new_incidents)
-            
-            # Print statistics
-            print(f"  - New incidents added: {result['new']}")
-            print(f"  - Duplicates skipped: {result['duplicates']}")
-            print(f"  - Total incidents in database: {result['total']}")
-            
-            # Save master file
-            accumulator.save_master()
-            
-            # Show overall statistics
-            stats = accumulator.get_statistics()
-            print(f"\nStatistics:")
-            print(f"  - Total unique incidents: {stats['total']}")
-            if stats['by_type']:
-                print(f"  - By type: {', '.join([f'{k}: {v}' for k, v in sorted(stats['by_type'].items(), key=lambda x: x[1], reverse=True)])}")
-            if stats['date_range']:
-                print(f"  - Date range: {stats['date_range']['earliest']} to {stats['date_range']['latest']}")
-            
-            print(f"\nWaiting {interval} seconds until next fetch...\n")
-            time.sleep(interval)
-            
-    except KeyboardInterrupt:
-        print("\n\nStopped by user.")
-        print("Saving final state...")
-        accumulator.save_master()
-        stats = accumulator.get_statistics()
-        print(f"\nFinal statistics:")
-        print(f"  - Total unique incidents: {stats['total']}")
-        print("Exiting...")
-
-
-if __name__ == '__main__':
-    main()
 

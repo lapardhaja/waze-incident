@@ -5,7 +5,6 @@ Fetches incident data from Waze Partner Hub API and saves it for visualization.
 
 import requests
 import json
-import time
 from datetime import datetime
 from typing import Dict, List, Optional
 import os
@@ -146,87 +145,4 @@ class WazeDataFetcher:
         
         return incidents
     
-    def save_incidents(self, incidents: List[Dict], filename: str = 'incidents.json'):
-        """
-        Save incidents to a JSON file.
-        
-        Args:
-            incidents: List of incident dictionaries
-            filename: Output filename
-        """
-        os.makedirs('data', exist_ok=True)
-        filepath = os.path.join('data', filename)
-        
-        with open(filepath, 'w') as f:
-            json.dump(incidents, f, indent=2)
-        
-        print(f"Saved {len(incidents)} incidents to {filepath}")
-    
-    def fetch_and_save(self, filename: Optional[str] = None):
-        """
-        Fetch data from API and save incidents to file.
-        
-        Args:
-            filename: Optional custom filename (defaults to timestamp-based name)
-        """
-        print("Fetching Waze data...")
-        data = self.fetch_data()
-        
-        if data is None:
-            print("Failed to fetch data from API")
-            return None
-        
-        incidents = self.extract_incidents(data)
-        
-        if not filename:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'incidents_{timestamp}.json'
-        
-        self.save_incidents(incidents, filename)
-        
-        # Also save as latest for easy access
-        if filename != 'incidents_latest.json':
-            self.save_incidents(incidents, 'incidents_latest.json')
-        
-        return incidents
-
-
-def main():
-    """Main function to run the fetcher."""
-    # Load API URL from config or use default
-    config_file = 'config.json'
-    
-    if os.path.exists(config_file):
-        with open(config_file, 'r') as f:
-            config = json.load(f)
-            api_url = config.get('waze_api_url')
-    else:
-        # Default API URL (user should update this)
-        api_url = "https://www.waze.com/partnerhub-api/partners/11533082963/waze-feeds/693756bf-6eb5-409b-bfe4-c5472f4e3a73?format=1"
-        print(f"Using default API URL. Update config.json to customize.")
-    
-    if not api_url:
-        print("Error: No API URL configured. Please set waze_api_url in config.json")
-        return
-    
-    fetcher = WazeDataFetcher(api_url)
-    incidents = fetcher.fetch_and_save()
-    
-    if incidents:
-        print(f"\nSummary:")
-        print(f"Total incidents: {len(incidents)}")
-        
-        # Count by type
-        type_counts = {}
-        for incident in incidents:
-            incident_type = incident.get('type', 'unknown')
-            type_counts[incident_type] = type_counts.get(incident_type, 0) + 1
-        
-        print("\nIncidents by type:")
-        for incident_type, count in sorted(type_counts.items(), key=lambda x: x[1], reverse=True):
-            print(f"  {incident_type}: {count}")
-
-
-if __name__ == '__main__':
-    main()
 

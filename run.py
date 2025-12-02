@@ -11,7 +11,6 @@ import json
 import os
 import webbrowser
 from datetime import datetime
-from pathlib import Path
 
 from fetch_waze_data import WazeDataFetcher
 from accumulate_incidents import IncidentAccumulator
@@ -19,6 +18,12 @@ from accumulate_incidents import IncidentAccumulator
 
 class CORSRequestHandler(http.server.SimpleHTTPRequestHandler):
     """HTTP handler with CORS support for local development."""
+    
+    def do_GET(self):
+        # Redirect root to heatmap.html
+        if self.path == '/' or self.path == '':
+            self.path = '/heatmap.html'
+        return super().do_GET()
     
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -77,7 +82,7 @@ def run_fetcher(api_url: str, interval: int, accumulator: IncidentAccumulator, f
 def main():
     """Main entry point."""
     # Change to script directory
-    os.chdir(Path(__file__).parent)
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     
     # Load configuration - support environment variables for cloud deployment
     api_url = os.environ.get('WAZE_API_URL')
