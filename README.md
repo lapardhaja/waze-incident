@@ -105,7 +105,8 @@ Edit `config.json`:
 
 - `WAZE_API_URL` - Your Waze Partner Hub API endpoint
 - `UPDATE_INTERVAL_SECONDS` - Fetch interval in seconds (default: 120)
-- `MONGODB_URI` - MongoDB connection string for persistent storage (optional, falls back to file storage)
+- `GITHUB_TOKEN` - GitHub personal access token for Gist storage (optional, falls back to file storage)
+- `GIST_ID` - GitHub Gist ID for storing incidents (optional, requires GITHUB_TOKEN)
 - `PORT` - Server port (default: 8000, auto-set by cloud platforms)
 - `RENDER` - Set automatically by Render.com (disables browser opening)
 
@@ -162,32 +163,35 @@ The `Procfile` is included for Heroku deployment.
 - ✅ Data **will update** while the app is running
 - ❌ Data **will be lost** on restart/redeploy (starts fresh each time)
 
-**Solution: Use MongoDB Atlas (FREE & Persistent)**
+**Solution: Use GitHub Gist (FREE & Simple)**
 
-The app now supports MongoDB for persistent storage. Set up a free MongoDB Atlas database:
+The app now supports GitHub Gist for persistent storage. It's super simple - just 2 steps:
 
-1. **Sign up at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)** (free tier: 512MB)
-2. **Create a cluster** (choose free M0 tier)
-3. **Create a database user** (Database Access → Add New User)
-4. **Whitelist IP addresses** (Network Access → Add IP Address → Allow Access from Anywhere: `0.0.0.0/0`)
-5. **Get connection string** (Connect → Connect your application → Copy connection string)
-6. **Set environment variable on Render:**
-   - Key: `MONGODB_URI`
-   - Value: Your connection string (replace `<password>` with your actual password)
+1. **Create a GitHub Personal Access Token:**
+   - Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Click "Generate new token (classic)"
+   - Name it: `waze-incidents`
+   - Check only: `gist` (create gists)
+   - Click "Generate token" and **copy it** (you won't see it again!)
 
-**Example connection string:**
-```
-mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
-```
+2. **Create a Gist and get its ID:**
+   - Go to [gist.github.com](https://gist.github.com)
+   - Create a new gist (make it **secret** or public, your choice)
+   - Name the file: `incidents.json`
+   - Content: `[]` (empty array)
+   - Click "Create secret gist" or "Create public gist"
+   - Copy the Gist ID from the URL (the long string after `/gist/`)
 
-The app will automatically:
-- Use MongoDB if `MONGODB_URI` is set (persistent storage)
+3. **Set environment variables on Render:**
+   - Key: `GITHUB_TOKEN` → Value: Your personal access token
+   - Key: `GIST_ID` → Value: Your gist ID
+
+**That's it!** The app will automatically:
+- Use GitHub Gist if both variables are set (persistent storage)
 - Fall back to file storage if not set (local development)
 
-**Other free database options:**
-- **Supabase** (PostgreSQL, free tier)
-- **Railway** (PostgreSQL, free tier)
-- **Render PostgreSQL** (free, but expires after 30 days)
+**Example Gist URL:** `https://gist.github.com/username/abc123def456...`
+**Gist ID:** `abc123def456...` (the part after the last slash)
 
 ## Troubleshooting
 

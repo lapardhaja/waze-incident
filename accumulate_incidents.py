@@ -1,66 +1,101 @@
 """
 Accumulate Waze incidents over time, ensuring no duplicates.
 Maintains a master incidents database that grows over time.
-Supports MongoDB for cloud persistence or file storage for local development.
+Supports GitHub Gist for cloud persistence or file storage for local development.
 """
 
 import json
 import os
+import requests
 from datetime import datetime
-from typing import List, Dict, Set
-
-# Try to import MongoDB, fallback to None if not available
-try:
-    from pymongo import MongoClient
-    from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
-    MONGO_AVAILABLE = True
-except ImportError:
-    MONGO_AVAILABLE = False
-    MongoClient = None
+from typing import List, Dict, Set, Optional
 
 
 class IncidentAccumulator:
     def __init__(self, master_file: str = 'data/incidents_master.json'):
         """
         Initialize the incident accumulator.
-        Uses MongoDB if MONGODB_URI is set, otherwise uses file storage.
+        Uses GitHub Gist if GITHUB_TOKEN and GIST_ID are set, otherwise uses file storage.
         
         Args:
             master_file: Path to the master incidents file (used for file storage mode)
         """
         self.master_file = master_file
         self.master_incidents: List[Dict] = []
-        self.use_mongodb = False
-        self.mongo_client = None
-        self.mongo_db = None
-        self.mongo_collection = None
+        self.use_gist = False
+        self.github_token = os.environ.get('GITHUB_TOKEN')
+        self.gist_id = os.environ.get('GIST_ID')
         
-        # Check if MongoDB should be used
-        mongodb_uri = os.environ.get('MONGODB_URI')
-        if mongodb_uri and MONGO_AVAILABLE:
-            try:
-                self.mongo_client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
-                # Test connection
-                self.mongo_client.admin.command('ping')
-                self.mongo_db = self.mongo_client.get_database('waze_incidents')
-                self.mongo_collection = self.mongo_db.get_collection('incidents')
-                self.use_mongodb = True
-                print("Connected to MongoDB - using persistent storage")
-            except (ConnectionFailure, ServerSelectionTimeoutError, Exception) as e:
-                print(f"MongoDB connection failed, falling back to file storage: {e}")
-                self.use_mongodb = False
+        # Check if GitHub Gist should be used
+        if self.github_token and self.gist_id:
+            self.use_gist = True
+            print("Using GitHub Gist for persistent storage")
+        else:
+            self.use_gist = False
         
         self.load_master()
     
+    def _load_from_gist(self) -> Optional[List[Dict]]:
+        """Load incidents from GitHub Gist."""
+        try:
+            url = f"https://api.github.com/gists/{self.gist_id}"
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            gist_data = response.json()
+            # Gist files are stored in a dict, get the first file
+            files = gist_data.get('files', {})
+            if files:
+                file_content = list(files.values())[0].get('content', '[]')
+                return json.loads(file_content)
+            return []
+        except Exception as e:
+            print(f"Error loading from Gist: {e}")
+            return None
+    
+    def _save_to_gist(self, data: List[Dict]) -> bool:
+        """Save incidents to GitHub Gist."""
+        try:
+            url = f"https://api.github.com/gists/{self.gist_id}"
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            # Get current gist to preserve filename
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            gist_data = response.json()
+            files = gist_data.get('files', {})
+            filename = list(files.keys())[0] if files else 'incidents.json'
+            
+            payload = {
+                'files': {
+                    filename: {
+                        'content': json.dumps(data, indent=2)
+                    }
+                }
+            }
+            
+            response = requests.patch(url, headers=headers, json=payload, timeout=10)
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            print(f"Error saving to Gist: {e}")
+            return False
+    
     def load_master(self):
-        """Load existing master incidents from MongoDB or file."""
-        if self.use_mongodb:
-            try:
-                incidents = list(self.mongo_collection.find({}, {'_id': 0}))
+        """Load existing master incidents from GitHub Gist or file."""
+        if self.use_gist:
+            incidents = self._load_from_gist()
+            if incidents is not None:
                 self.master_incidents = incidents
-                print(f"Loaded {len(self.master_incidents)} existing incidents from MongoDB")
-            except Exception as e:
-                print(f"Error loading from MongoDB: {e}")
+                print(f"Loaded {len(self.master_incidents)} existing incidents from GitHub Gist")
+            else:
                 self.master_incidents = []
         else:
             # File storage mode
@@ -143,16 +178,10 @@ class IncidentAccumulator:
         }
     
     def save_master(self):
-        """Save the master incidents list to MongoDB or file."""
-        if self.use_mongodb:
-            try:
-                # Clear collection and insert all incidents
-                self.mongo_collection.delete_many({})
-                if self.master_incidents:
-                    self.mongo_collection.insert_many(self.master_incidents)
-                print(f"Saved {len(self.master_incidents)} incidents to MongoDB")
-            except Exception as e:
-                print(f"Error saving to MongoDB: {e}")
+        """Save the master incidents list to GitHub Gist or file."""
+        if self.use_gist:
+            if self._save_to_gist(self.master_incidents):
+                print(f"Saved {len(self.master_incidents)} incidents to GitHub Gist")
         else:
             # File storage mode
             os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
@@ -198,4 +227,3 @@ class IncidentAccumulator:
             }
         
         return stats
-
