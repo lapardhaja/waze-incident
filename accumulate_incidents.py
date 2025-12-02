@@ -98,11 +98,6 @@ class IncidentAccumulator:
             if incidents is not None:
                 self.master_incidents = incidents
                 print(f"✓ Loaded {len(self.master_incidents)} existing incidents from GitHub Gist")
-                # Immediately create latest file for heatmap (needed on Render startup)
-                latest_file = 'data/incidents_latest.json'
-                os.makedirs(os.path.dirname(latest_file) if os.path.dirname(latest_file) else '.', exist_ok=True)
-                with open(latest_file, 'w') as f:
-                    json.dump(self.master_incidents, f, indent=2)
             else:
                 self.master_incidents = []
                 print("⚠ Failed to load from Gist, starting fresh")
