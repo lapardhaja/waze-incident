@@ -130,7 +130,8 @@ class WazeDataFetcher:
                     millis = incident['pubMillis']
                     if millis < 1e10:  # Likely in seconds
                         millis = millis * 1000
-                    incident['timestamp'] = datetime.fromtimestamp(millis / 1000).isoformat()
+                    # Use UTC explicitly (Waze API provides UTC timestamps)
+                    incident['timestamp'] = datetime.utcfromtimestamp(millis / 1000).isoformat() + 'Z'
                 except (ValueError, OSError):
                     incident['timestamp'] = None
             else:

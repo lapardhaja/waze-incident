@@ -57,7 +57,8 @@ def run_fetcher(api_url: str, interval: int, accumulator: IncidentAccumulator, f
     """Continuously fetch and accumulate incidents."""
     while True:
         try:
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            # Use UTC for consistency (Render servers use UTC)
+            timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
             print(f"\n[{timestamp}] Fetching incidents...")
             
             data = fetcher.fetch_data()
