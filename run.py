@@ -41,7 +41,7 @@ def run_server(port=None):
     
     with socketserver.TCPServer(("", port), handler) as httpd:
         # Don't try to open browser in cloud environments
-        if not os.environ.get('RAILWAY_ENVIRONMENT') and not os.environ.get('RENDER'):
+        if not os.environ.get('RENDER'):
             print(f"Server running at http://localhost:{port}/heatmap.html")
         else:
             print(f"Server running on port {port}")
@@ -131,7 +131,7 @@ def main():
     port = int(os.environ.get('PORT', 8000))
     
     # Open browser (only in local environment)
-    if not os.environ.get('RAILWAY_ENVIRONMENT') and not os.environ.get('RENDER'):
+    if not os.environ.get('RENDER'):
         url = f"http://localhost:{port}/heatmap.html"
         print(f"\nOpening browser: {url}")
         try:
