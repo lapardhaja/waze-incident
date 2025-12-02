@@ -10,7 +10,8 @@ ENV/
 .venv
 
 # Data files
-data/
+data/*
+!data/.gitkeep
 *.json
 !config.json
 
