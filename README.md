@@ -193,6 +193,32 @@ The app now supports GitHub Gist for persistent storage. It's super simple - jus
 **Example Gist URL:** `https://gist.github.com/username/abc123def456...`
 **Gist ID:** `abc123def456...` (the part after the last slash)
 
+### How to Verify Gist is Working
+
+**1. Check the startup logs:**
+When the app starts, you should see:
+```
+✓ GitHub Gist configured - using persistent cloud storage
+✓ Loaded X existing incidents from GitHub Gist
+```
+
+If you see warnings instead, Gist isn't configured correctly.
+
+**2. Check your Gist file:**
+- Go to your Gist URL: `https://gist.github.com/yourusername/YOUR_GIST_ID`
+- The `incidents.json` file should update every 2 minutes (or your configured interval)
+- You'll see the file size grow as incidents accumulate
+
+**3. Test persistence:**
+- Let the app run and collect some incidents
+- Manually restart your Render service
+- Check logs - it should load the same number of incidents (not start at 0)
+
+**4. Check Render logs:**
+In Render dashboard → Logs, look for:
+- `✓ Saved X incidents to GitHub Gist` (every 2 minutes)
+- `✓ Loaded X existing incidents from GitHub Gist` (on startup)
+
 ## Troubleshooting
 
 - **"Error: config.json not found"**: Create `config.json` or set `WAZE_API_URL` environment variable

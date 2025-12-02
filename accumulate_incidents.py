@@ -29,9 +29,12 @@ class IncidentAccumulator:
         # Check if GitHub Gist should be used
         if self.github_token and self.gist_id:
             self.use_gist = True
-            print("Using GitHub Gist for persistent storage")
+            print("✓ GitHub Gist configured - using persistent cloud storage")
         else:
             self.use_gist = False
+            if os.environ.get('RENDER'):
+                print("⚠ Using file storage (data will be lost on restart)")
+                print("  Set GITHUB_TOKEN and GIST_ID for persistent storage")
         
         self.load_master()
     
@@ -94,9 +97,10 @@ class IncidentAccumulator:
             incidents = self._load_from_gist()
             if incidents is not None:
                 self.master_incidents = incidents
-                print(f"Loaded {len(self.master_incidents)} existing incidents from GitHub Gist")
+                print(f"✓ Loaded {len(self.master_incidents)} existing incidents from GitHub Gist")
             else:
                 self.master_incidents = []
+                print("⚠ Failed to load from Gist, starting fresh")
         else:
             # File storage mode
             if os.path.exists(self.master_file):
@@ -181,7 +185,9 @@ class IncidentAccumulator:
         """Save the master incidents list to GitHub Gist or file."""
         if self.use_gist:
             if self._save_to_gist(self.master_incidents):
-                print(f"Saved {len(self.master_incidents)} incidents to GitHub Gist")
+                print(f"✓ Saved {len(self.master_incidents)} incidents to GitHub Gist")
+            else:
+                print("⚠ Failed to save to Gist")
         else:
             # File storage mode
             os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
