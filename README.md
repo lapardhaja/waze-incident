@@ -105,6 +105,7 @@ Edit `config.json`:
 
 - `WAZE_API_URL` - Your Waze Partner Hub API endpoint
 - `UPDATE_INTERVAL_SECONDS` - Fetch interval in seconds (default: 120)
+- `MONGODB_URI` - MongoDB connection string for persistent storage (optional, falls back to file storage)
 - `PORT` - Server port (default: 8000, auto-set by cloud platforms)
 - `RENDER` - Set automatically by Render.com (disables browser opening)
 
@@ -161,12 +162,32 @@ The `Procfile` is included for Heroku deployment.
 - ✅ Data **will update** while the app is running
 - ❌ Data **will be lost** on restart/redeploy (starts fresh each time)
 
-**For persistent storage on Render:**
-- Use **Render Disk** (paid feature) for persistent file storage
-- Or integrate with an external database (PostgreSQL, MongoDB, etc.)
-- Or use cloud storage (S3, Google Cloud Storage, etc.)
+**Solution: Use MongoDB Atlas (FREE & Persistent)**
 
-For local development, data persists normally.
+The app now supports MongoDB for persistent storage. Set up a free MongoDB Atlas database:
+
+1. **Sign up at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)** (free tier: 512MB)
+2. **Create a cluster** (choose free M0 tier)
+3. **Create a database user** (Database Access → Add New User)
+4. **Whitelist IP addresses** (Network Access → Add IP Address → Allow Access from Anywhere: `0.0.0.0/0`)
+5. **Get connection string** (Connect → Connect your application → Copy connection string)
+6. **Set environment variable on Render:**
+   - Key: `MONGODB_URI`
+   - Value: Your connection string (replace `<password>` with your actual password)
+
+**Example connection string:**
+```
+mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+```
+
+The app will automatically:
+- Use MongoDB if `MONGODB_URI` is set (persistent storage)
+- Fall back to file storage if not set (local development)
+
+**Other free database options:**
+- **Supabase** (PostgreSQL, free tier)
+- **Railway** (PostgreSQL, free tier)
+- **Render PostgreSQL** (free, but expires after 30 days)
 
 ## Troubleshooting
 

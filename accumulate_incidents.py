@@ -1,6 +1,7 @@
 """
 Accumulate Waze incidents over time, ensuring no duplicates.
 Maintains a master incidents database that grows over time.
+Supports MongoDB for cloud persistence or file storage for local development.
 """
 
 import json
@@ -8,32 +9,72 @@ import os
 from datetime import datetime
 from typing import List, Dict, Set
 
+# Try to import MongoDB, fallback to None if not available
+try:
+    from pymongo import MongoClient
+    from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+    MONGO_AVAILABLE = True
+except ImportError:
+    MONGO_AVAILABLE = False
+    MongoClient = None
+
 
 class IncidentAccumulator:
     def __init__(self, master_file: str = 'data/incidents_master.json'):
         """
         Initialize the incident accumulator.
+        Uses MongoDB if MONGODB_URI is set, otherwise uses file storage.
         
         Args:
-            master_file: Path to the master incidents file
+            master_file: Path to the master incidents file (used for file storage mode)
         """
         self.master_file = master_file
         self.master_incidents: List[Dict] = []
+        self.use_mongodb = False
+        self.mongo_client = None
+        self.mongo_db = None
+        self.mongo_collection = None
+        
+        # Check if MongoDB should be used
+        mongodb_uri = os.environ.get('MONGODB_URI')
+        if mongodb_uri and MONGO_AVAILABLE:
+            try:
+                self.mongo_client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
+                # Test connection
+                self.mongo_client.admin.command('ping')
+                self.mongo_db = self.mongo_client.get_database('waze_incidents')
+                self.mongo_collection = self.mongo_db.get_collection('incidents')
+                self.use_mongodb = True
+                print("Connected to MongoDB - using persistent storage")
+            except (ConnectionFailure, ServerSelectionTimeoutError, Exception) as e:
+                print(f"MongoDB connection failed, falling back to file storage: {e}")
+                self.use_mongodb = False
+        
         self.load_master()
     
     def load_master(self):
-        """Load existing master incidents file."""
-        if os.path.exists(self.master_file):
+        """Load existing master incidents from MongoDB or file."""
+        if self.use_mongodb:
             try:
-                with open(self.master_file, 'r') as f:
-                    self.master_incidents = json.load(f)
-                print(f"Loaded {len(self.master_incidents)} existing incidents from master file")
+                incidents = list(self.mongo_collection.find({}, {'_id': 0}))
+                self.master_incidents = incidents
+                print(f"Loaded {len(self.master_incidents)} existing incidents from MongoDB")
             except Exception as e:
-                print(f"Error loading master file: {e}")
+                print(f"Error loading from MongoDB: {e}")
                 self.master_incidents = []
         else:
-            self.master_incidents = []
-            os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
+            # File storage mode
+            if os.path.exists(self.master_file):
+                try:
+                    with open(self.master_file, 'r') as f:
+                        self.master_incidents = json.load(f)
+                    print(f"Loaded {len(self.master_incidents)} existing incidents from master file")
+                except Exception as e:
+                    print(f"Error loading master file: {e}")
+                    self.master_incidents = []
+            else:
+                self.master_incidents = []
+                os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
     
     def get_incident_key(self, incident: Dict) -> str:
         """
@@ -102,18 +143,29 @@ class IncidentAccumulator:
         }
     
     def save_master(self):
-        """Save the master incidents list to file."""
-        os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
-        
-        with open(self.master_file, 'w') as f:
-            json.dump(self.master_incidents, f, indent=2)
-        
-        # Also save as latest for the heatmap
-        latest_file = 'data/incidents_latest.json'
-        with open(latest_file, 'w') as f:
-            json.dump(self.master_incidents, f, indent=2)
-        
-        print(f"Saved {len(self.master_incidents)} incidents to master file")
+        """Save the master incidents list to MongoDB or file."""
+        if self.use_mongodb:
+            try:
+                # Clear collection and insert all incidents
+                self.mongo_collection.delete_many({})
+                if self.master_incidents:
+                    self.mongo_collection.insert_many(self.master_incidents)
+                print(f"Saved {len(self.master_incidents)} incidents to MongoDB")
+            except Exception as e:
+                print(f"Error saving to MongoDB: {e}")
+        else:
+            # File storage mode
+            os.makedirs(os.path.dirname(self.master_file) if os.path.dirname(self.master_file) else '.', exist_ok=True)
+            
+            with open(self.master_file, 'w') as f:
+                json.dump(self.master_incidents, f, indent=2)
+            
+            # Also save as latest for the heatmap
+            latest_file = 'data/incidents_latest.json'
+            with open(latest_file, 'w') as f:
+                json.dump(self.master_incidents, f, indent=2)
+            
+            print(f"Saved {len(self.master_incidents)} incidents to master file")
     
     def get_statistics(self) -> Dict:
         """Get statistics about accumulated incidents."""
