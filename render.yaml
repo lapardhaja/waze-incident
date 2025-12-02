@@ -7,9 +7,7 @@ services:
     envVars:
       - key: PORT
         value: 8000
-      - key: WAZE_API_URL
-        fromService:
-          name: waze-incidents
-          type: web
-          property: env.WAZE_API_URL
+      # Set WAZE_API_URL in Render dashboard under Environment variables
+      # - key: WAZE_API_URL
+      #   value: YOUR_WAZE_API_URL_HERE
 
