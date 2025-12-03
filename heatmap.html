@@ -608,6 +608,7 @@
                             ${incident.street ? `<div><strong>📍</strong> ${incident.street}</div>` : ''}
                             ${incident.city ? `<div><strong>🏙️</strong> ${incident.city}</div>` : ''}
                             ${incident.timestamp ? `<div><strong>🕐</strong> ${formatTimestamp(incident.timestamp)}</div>` : ''}
+                            ${incident.uuid ? `<div><strong>ID</strong> ${incident.uuid}</div>` : ''}
                         </div>
                     </div>
                 `;
