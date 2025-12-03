@@ -407,13 +407,14 @@
             icon.textContent = isCollapsed ? '▲' : '▼';
         }
         
-        // Format timestamp for display (converts UTC to user's local timezone)
+        // Format timestamp for display (UTC -> local timezone + EST)
         function formatTimestamp(timestamp) {
             if (!timestamp) return 'Unknown';
             try {
-                const date = new Date(timestamp);
-                // Convert UTC timestamp to user's local timezone
-                const options = { 
+                const date = new Date(timestamp); // stored as UTC (with Z)
+                
+                // User's local time with timezone
+                const localOptions = { 
                     year: 'numeric', 
                     month: 'short', 
                     day: 'numeric', 
@@ -421,7 +422,26 @@
                     minute: '2-digit',
                     timeZoneName: 'short'
                 };
-                return date.toLocaleString(undefined, options);
+                const localStr = date.toLocaleString(undefined, localOptions);
+                
+                // Explicit US Eastern time (EST/EDT)
+                const estOptions = { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    timeZone: 'America/New_York',
+                    timeZoneName: 'short'
+                };
+                const estStr = date.toLocaleString(undefined, estOptions);
+                
+                // If user is already in Eastern, avoid duplicate
+                if (localStr === estStr) {
+                    return localStr;
+                }
+                
+                return `${localStr} (EST: ${estStr})`;
             } catch (e) {
                 return timestamp;
             }
