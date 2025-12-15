@@ -1,391 +1,486 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Waze Incidents Heatmap</title>
-    
+
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-        
-        .control-panel {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-            min-width: 280px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .control-panel h2 {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            font-size: 18px;
-            color: #333;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .control-panel h2 .toggle-icon {
-            font-size: 14px;
-            color: #888;
-            margin-left: 8px;
-        }
-        
-        .control-panel.collapsed .control-group,
-        .control-panel.collapsed .stats,
-        .control-panel.collapsed .button {
-            display: none;
-        }
-        
-        .control-panel.collapsed {
-            max-height: none;
-        }
-        
-        .control-group {
-            margin-bottom: 15px;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .control-group input[type="range"] {
-            width: 100%;
-        }
-        
-        .control-group input[type="datetime-local"],
-        .control-group select {
-            width: 100%;
-            padding: 6px 8px;
-            font-size: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        .date-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        
-        .date-row > div {
-            flex: 1;
-        }
-        
-        .date-row label {
-            font-size: 11px;
-            color: #777;
-        }
-        
-        .quick-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-top: 8px;
-        }
-        
-        .quick-filter-btn {
-            padding: 4px 8px;
-            font-size: 10px;
-            border: 1px solid #ddd;
-            background: #f5f5f5;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        
-        .quick-filter-btn:hover {
-            background: #e0e0e0;
-        }
-        
-        .quick-filter-btn.active {
-            background: #2196F3;
-            color: white;
-            border-color: #2196F3;
-        }
-        
-        .button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            width: 100%;
-            margin-top: 5px;
-        }
-        
-        .button:hover {
-            background: #45a049;
-        }
-        
-        .button.secondary {
-            background: #2196F3;
-        }
-        
-        .button.secondary:hover {
-            background: #0b7dda;
-        }
-        
-        .stats {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 12px;
-        }
-        
-        .stat-label {
-            color: #666;
-        }
-        
-        .stat-value {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .legend {
-            position: absolute;
-            bottom: 30px;
-            right: 10px;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-            font-size: 11px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 15px;
-            margin-right: 8px;
-            border-radius: 3px;
-        }
-        
-        .zoom-indicator {
-            position: absolute;
-            bottom: 30px;
-            left: 10px;
-            background: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-            font-size: 11px;
-        }
-        
-        .zoom-indicator .mode {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .zoom-indicator .hint {
-            color: #888;
-            font-size: 10px;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      #map {
+        width: 100%;
+        height: 100vh;
+      }
+
+      .control-panel {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        min-width: 280px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .control-panel h2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: #333;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .control-panel h2 .toggle-icon {
+        font-size: 14px;
+        color: #888;
+        margin-left: 8px;
+      }
+
+      .control-panel.collapsed .control-group,
+      .control-panel.collapsed .stats,
+      .control-panel.collapsed .button {
+        display: none;
+      }
+
+      .control-panel.collapsed {
+        max-height: none;
+      }
+
+      .control-group {
+        margin-bottom: 15px;
+      }
+
+      .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #555;
+      }
+
+      .control-group input[type="range"] {
+        width: 100%;
+      }
+
+      .control-group input[type="datetime-local"],
+      .control-group select {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .date-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .date-row > div {
+        flex: 1;
+      }
+
+      .date-row label {
+        font-size: 11px;
+        color: #777;
+      }
+
+      .quick-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 8px;
+      }
+
+      .quick-filter-btn {
+        padding: 4px 8px;
+        font-size: 10px;
+        border: 1px solid #ddd;
+        background: #f5f5f5;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+
+      .quick-filter-btn:hover {
+        background: #e0e0e0;
+      }
+
+      .quick-filter-btn.active {
+        background: #2196f3;
+        color: white;
+        border-color: #2196f3;
+      }
+
+      .button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        width: 100%;
+        margin-top: 5px;
+      }
+
+      .button:hover {
+        background: #45a049;
+      }
+
+      .button.secondary {
+        background: #2196f3;
+      }
+
+      .button.secondary:hover {
+        background: #0b7dda;
+      }
+
+      .stats {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+      }
+
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 12px;
+      }
+
+      .stat-label {
+        color: #666;
+      }
+
+      .stat-value {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .legend {
+        position: absolute;
+        bottom: 30px;
+        right: 10px;
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        font-size: 11px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+
+      .legend-color {
+        width: 20px;
+        height: 15px;
+        margin-right: 8px;
+        border-radius: 3px;
+      }
+
+      .zoom-indicator {
+        position: absolute;
+        bottom: 30px;
+        left: 10px;
+        background: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        font-size: 11px;
+      }
+
+      .zoom-indicator .mode {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .zoom-indicator .hint {
+        color: #888;
+        font-size: 10px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="map"></div>
-    
+
     <div class="control-panel" id="controlPanel">
-        <h2 onclick="toggleControlPanel()">
-            <span>🚗 Waze Incidents</span>
-            <span class="toggle-icon" id="controlPanelToggleIcon">▼</span>
-        </h2>
-        
-        <div class="control-group" style="background: linear-gradient(135deg, #e8f4f8 0%, #f0f7ff 100%); padding: 10px; border-radius: 6px; border-left: 3px solid #2196F3; margin-bottom: 15px;">
-            <div style="font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Data Last Updated</div>
-            <div id="lastUpdated" style="font-size: 14px; font-weight: 600; color: #1565c0; margin-top: 2px;">Loading...</div>
+      <h2 onclick="toggleControlPanel()">
+        <span>🚗 Waze Incidents</span>
+        <span class="toggle-icon" id="controlPanelToggleIcon">▼</span>
+      </h2>
+
+      <div
+        class="control-group"
+        style="
+          background: linear-gradient(135deg, #e8f4f8 0%, #f0f7ff 100%);
+          padding: 10px;
+          border-radius: 6px;
+          border-left: 3px solid #2196f3;
+          margin-bottom: 15px;
+        "
+      >
+        <div
+          style="
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          "
+        >
+          Data Last Updated
         </div>
-        
-        <div class="control-group">
-            <label>Filter by Type:</label>
-            <select id="incidentType">
-                <option value="all">All Types</option>
-            </select>
+        <div
+          id="lastUpdated"
+          style="
+            font-size: 14px;
+            font-weight: 600;
+            color: #1565c0;
+            margin-top: 2px;
+          "
+        >
+          Loading...
         </div>
-        
-        <div class="control-group">
-            <label>Min. Reliability: <span id="reliabilityLabel">5/10</span></label>
-            <input type="range" id="reliabilityThreshold" min="0" max="10" value="5" step="1" oninput="updateReliabilityLabel(); filterIncidents();" />
-            <div style="font-size: 10px; color: #888; margin-top: 2px;">Filters out low-confidence reports</div>
+      </div>
+
+      <div class="control-group">
+        <label>Filter by Type:</label>
+        <select
+          id="incidentType"
+          onchange="updateIncidentSubtypeFilter(); filterIncidents();"
+        >
+          <option value="all">All Types</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Filter by Subtype:</label>
+        <select id="incidentSubtype" onchange="filterIncidents()">
+          <option value="all">All Subtypes</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Min. Reliability: <span id="reliabilityLabel">5/10</span></label>
+        <input
+          type="range"
+          id="reliabilityThreshold"
+          min="0"
+          max="10"
+          value="5"
+          step="1"
+          oninput="updateReliabilityLabel(); filterIncidents();"
+        />
+        <div style="font-size: 10px; color: #888; margin-top: 2px">
+          Filters out low-confidence reports
         </div>
-        
-        <div class="control-group">
-            <label>Time Period:</label>
-            <div class="date-row">
-                <div>
-                    <label>From:</label>
-                    <input type="datetime-local" id="dateFrom" />
-                </div>
-                <div>
-                    <label>To:</label>
-                    <input type="datetime-local" id="dateTo" />
-                </div>
-            </div>
-            <div class="quick-filters">
-                <button class="quick-filter-btn active" data-period="all">All Time</button>
-                <button class="quick-filter-btn" data-period="1h">Last Hour</button>
-                <button class="quick-filter-btn" data-period="6h">Last 6h</button>
-                <button class="quick-filter-btn" data-period="24h">Last 24h</button>
-                <button class="quick-filter-btn" data-period="7d">Last 7 Days</button>
-            </div>
+      </div>
+
+      <div class="control-group">
+        <label>Time Period:</label>
+        <div class="date-row">
+          <div>
+            <label>From:</label>
+            <input type="datetime-local" id="dateFrom" />
+          </div>
+          <div>
+            <label>To:</label>
+            <input type="datetime-local" id="dateTo" />
+          </div>
         </div>
-        
-        <div class="control-group">
-            <label>Hotspot Size: <span id="radiusLabel">Medium</span></label>
-            <input type="range" id="radius" min="1" max="5" value="3" step="1" oninput="updateRadiusLabel(); updateVisualization();" />
+        <div class="quick-filters">
+          <button class="quick-filter-btn active" data-period="all">
+            All Time
+          </button>
+          <button class="quick-filter-btn" data-period="1h">Last Hour</button>
+          <button class="quick-filter-btn" data-period="6h">Last 6h</button>
+          <button class="quick-filter-btn" data-period="24h">Last 24h</button>
+          <button class="quick-filter-btn" data-period="7d">Last 7 Days</button>
         </div>
-        
-        <div class="stats">
-            <div class="stat-item">
-                <span class="stat-label">Total in Database:</span>
-                <span class="stat-value" id="totalIncidents">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Showing:</span>
-                <span class="stat-value" id="displayedIncidents">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Date Range:</span>
-                <span class="stat-value" id="dateRange">-</span>
-            </div>
+      </div>
+
+      <div class="control-group">
+        <label>Hotspot Size: <span id="radiusLabel">Medium</span></label>
+        <input
+          type="range"
+          id="radius"
+          min="1"
+          max="5"
+          value="3"
+          step="1"
+          oninput="updateRadiusLabel(); updateVisualization();"
+        />
+      </div>
+
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-label">Total in Database:</span>
+          <span class="stat-value" id="totalIncidents">0</span>
         </div>
-        
-        <button class="button" onclick="loadDefaultData()">🔄 Refresh Data</button>
-        <button class="button secondary" id="autoRefreshBtn" onclick="toggleAutoRefresh()">▶ Start Auto-Refresh</button>
-        <button class="button secondary" onclick="downloadIncidents()">⬇ Download (CSV for Excel)</button>
+        <div class="stat-item">
+          <span class="stat-label">Showing:</span>
+          <span class="stat-value" id="displayedIncidents">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Date Range:</span>
+          <span class="stat-value" id="dateRange">-</span>
+        </div>
+      </div>
+
+      <button class="button" onclick="loadDefaultData()">
+        🔄 Refresh Data
+      </button>
+      <button
+        class="button secondary"
+        id="autoRefreshBtn"
+        onclick="toggleAutoRefresh()"
+      >
+        ▶ Start Auto-Refresh
+      </button>
+      <button class="button secondary" onclick="downloadIncidents()">
+        ⬇ Download (CSV for Excel)
+      </button>
     </div>
-    
+
     <div class="zoom-indicator">
-        <div class="mode" id="viewMode">Heatmap View</div>
-        <div class="hint" id="viewHint">Zoom in to see individual incidents</div>
+      <div class="mode" id="viewMode">Heatmap View</div>
+      <div class="hint" id="viewHint">Zoom in to see individual incidents</div>
     </div>
-    
+
     <div class="legend" id="heatmapLegend">
-        <div style="font-weight: 600; margin-bottom: 8px;">Incident Density</div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: linear-gradient(to right, blue, cyan);"></div>
-            <span>Low</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: linear-gradient(to right, cyan, lime);"></div>
-            <span>Medium</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: linear-gradient(to right, yellow, red);"></div>
-            <span>High</span>
-        </div>
+      <div style="font-weight: 600; margin-bottom: 8px">Incident Density</div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: linear-gradient(to right, blue, cyan)"
+        ></div>
+        <span>Low</span>
+      </div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: linear-gradient(to right, cyan, lime)"
+        ></div>
+        <span>Medium</span>
+      </div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: linear-gradient(to right, yellow, red)"
+        ></div>
+        <span>High</span>
+      </div>
     </div>
-    
-    <div class="legend" id="markerLegend" style="display: none;">
-        <div style="font-weight: 600; margin-bottom: 8px;">Incident Types</div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #e74c3c; border-radius: 50%;"></div>
-            <span>Accident</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #f39c12; border-radius: 50%;"></div>
-            <span>Hazard</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #9b59b6; border-radius: 50%;"></div>
-            <span>Traffic Jam</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #3498db; border-radius: 50%;"></div>
-            <span>Police</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #e67e22; border-radius: 50%;"></div>
-            <span>Construction</span>
-        </div>
+
+    <div class="legend" id="markerLegend" style="display: none">
+      <div style="font-weight: 600; margin-bottom: 8px">Incident Types</div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: #e74c3c; border-radius: 50%"
+        ></div>
+        <span>Accident</span>
+      </div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: #f39c12; border-radius: 50%"
+        ></div>
+        <span>Hazard</span>
+      </div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: #9b59b6; border-radius: 50%"
+        ></div>
+        <span>Traffic Jam</span>
+      </div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: #3498db; border-radius: 50%"
+        ></div>
+        <span>Police</span>
+      </div>
+      <div class="legend-item">
+        <div
+          class="legend-color"
+          style="background: #e67e22; border-radius: 50%"
+        ></div>
+        <span>Construction</span>
+      </div>
     </div>
-    
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Leaflet.heat plugin -->
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    
+
     <script>
-        let map;
-        let heatLayer = null;
-        let markersLayer = null;
-        let allIncidents = [];
-        let filteredIncidents = [];
-        let autoRefreshInterval = null;
-        
-        // Smart zoom thresholds
-        const MARKER_ZOOM_THRESHOLD = 15;  // Show individual markers at this zoom
-        
-        // Radius presets (intuitive names)
-        const radiusPresets = {
-            1: { radius: 10, blur: 8, label: 'Tight' },
-            2: { radius: 15, blur: 12, label: 'Small' },
-            3: { radius: 25, blur: 15, label: 'Medium' },
-            4: { radius: 35, blur: 20, label: 'Large' },
-            5: { radius: 50, blur: 25, label: 'Wide' }
-        };
-        
-        // Icon colors for different incident types
-        const incidentColors = {
-            'ACCIDENT': '#e74c3c',
-            'HAZARD': '#f39c12',
-            'JAM': '#9b59b6',
-            'ROAD_CLOSED': '#2c3e50',
-            'CONSTRUCTION': '#e67e22',
-            'POLICE': '#3498db',
-            'default': '#7f8c8d'
-        };
-        
-        // Create custom icon for incident
-        function createIncidentIcon(type) {
-            const color = incidentColors[type] || incidentColors['default'];
-            return L.divIcon({
-                className: 'custom-incident-marker',
-                html: `<div style="
+      let map;
+      let heatLayer = null;
+      let markersLayer = null;
+      let allIncidents = [];
+      let filteredIncidents = [];
+      let autoRefreshInterval = null;
+
+      // Smart zoom thresholds
+      const MARKER_ZOOM_THRESHOLD = 15; // Show individual markers at this zoom
+
+      // Radius presets (intuitive names)
+      const radiusPresets = {
+        1: { radius: 10, blur: 8, label: "Tight" },
+        2: { radius: 15, blur: 12, label: "Small" },
+        3: { radius: 25, blur: 15, label: "Medium" },
+        4: { radius: 35, blur: 20, label: "Large" },
+        5: { radius: 50, blur: 25, label: "Wide" },
+      };
+
+      // Icon colors for different incident types
+      const incidentColors = {
+        ACCIDENT: "#e74c3c",
+        HAZARD: "#f39c12",
+        JAM: "#9b59b6",
+        ROAD_CLOSED: "#2c3e50",
+        CONSTRUCTION: "#e67e22",
+        POLICE: "#3498db",
+        default: "#7f8c8d",
+      };
+
+      // Create custom icon for incident
+      function createIncidentIcon(type) {
+        const color = incidentColors[type] || incidentColors["default"];
+        return L.divIcon({
+          className: "custom-incident-marker",
+          html: `<div style="
                     background-color: ${color};
                     width: 24px;
                     height: 24px;
@@ -398,472 +493,582 @@
                     font-size: 12px;
                     color: white;
                     font-weight: bold;
-                ">${type ? type.charAt(0) : '?'}</div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12],
-                popupAnchor: [0, -12]
-            });
+                ">${type ? type.charAt(0) : "?"}</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          popupAnchor: [0, -12],
+        });
+      }
+
+      // Toggle control panel collapse/expand
+      function toggleControlPanel() {
+        const panel = document.getElementById("controlPanel");
+        const icon = document.getElementById("controlPanelToggleIcon");
+        const isCollapsed = panel.classList.toggle("collapsed");
+        icon.textContent = isCollapsed ? "▲" : "▼";
+      }
+
+      // Format timestamp for display (UTC -> local timezone + EST)
+      function formatTimestamp(timestamp) {
+        if (!timestamp) return "Unknown";
+        try {
+          const date = new Date(timestamp); // stored as UTC (with Z)
+
+          // User's local time with timezone
+          const localOptions = {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZoneName: "short",
+          };
+          const localStr = date.toLocaleString(undefined, localOptions);
+
+          // Explicit US Eastern time (EST/EDT)
+          const estOptions = {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "America/New_York",
+            timeZoneName: "short",
+          };
+          const estStr = date.toLocaleString(undefined, estOptions);
+
+          // If user is already in Eastern, avoid duplicate
+          if (localStr === estStr) {
+            return localStr;
+          }
+
+          return `${localStr} (EST: ${estStr})`;
+        } catch (e) {
+          return timestamp;
         }
-        
-        // Toggle control panel collapse/expand
-        function toggleControlPanel() {
-            const panel = document.getElementById('controlPanel');
-            const icon = document.getElementById('controlPanelToggleIcon');
-            const isCollapsed = panel.classList.toggle('collapsed');
-            icon.textContent = isCollapsed ? '▲' : '▼';
-        }
-        
-        // Format timestamp for display (UTC -> local timezone + EST)
-        function formatTimestamp(timestamp) {
-            if (!timestamp) return 'Unknown';
-            try {
-                const date = new Date(timestamp); // stored as UTC (with Z)
-                
-                // User's local time with timezone
-                const localOptions = { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    timeZoneName: 'short'
-                };
-                const localStr = date.toLocaleString(undefined, localOptions);
-                
-                // Explicit US Eastern time (EST/EDT)
-                const estOptions = { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    timeZone: 'America/New_York',
-                    timeZoneName: 'short'
-                };
-                const estStr = date.toLocaleString(undefined, estOptions);
-                
-                // If user is already in Eastern, avoid duplicate
-                if (localStr === estStr) {
-                    return localStr;
-                }
-                
-                return `${localStr} (EST: ${estStr})`;
-            } catch (e) {
-                return timestamp;
-            }
-        }
-        
-        // Convert incidents to CSV (for Excel)
-        function incidentsToCSV(incidents) {
-            if (!incidents || incidents.length === 0) {
-                return 'No data';
-            }
-            
-            const headers = [
-                'id',
-                'type',
-                'subtype',
-                'street',
-                'city',
-                'country',
-                'lat',
-                'lng',
-                'reliability',
-                'reportRating',
-                'pubMillis',
-                'timestamp',
-                'description'
-            ];
-            
-            const escape = (value) => {
-                if (value === null || value === undefined) return '';
-                const str = String(value);
-                if (str.includes('"') || str.includes(',') || str.includes('\n')) {
-                    return `"${str.replace(/"/g, '""')}"`;
-                }
-                return str;
-            };
-            
-            const rows = [];
-            rows.push(headers.join(','));
-            
-            incidents.forEach(incident => {
-                rows.push([
-                    incident.uuid || '',
-                    incident.type || '',
-                    incident.subtype || '',
-                    incident.street || '',
-                    incident.city || '',
-                    incident.country || '',
-                    incident.lat,
-                    incident.lng,
-                    incident.reliability,
-                    incident.reportRating,
-                    incident.pubMillis,
-                    incident.timestamp || '',
-                    incident.description || ''
-                ].map(escape).join(','));
-            });
-            
-            return rows.join('\n');
-        }
-        
-        // Download current (filtered) incidents as CSV for Excel
-        function downloadIncidents() {
-            const data = filteredIncidents && filteredIncidents.length > 0 ? filteredIncidents : allIncidents;
-            if (!data || data.length === 0) {
-                alert('No incidents to download.');
-                return;
-            }
-            
-            const csv = incidentsToCSV(data);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
-            a.href = url;
-            a.download = `waze_incidents_${timestamp}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-        
-        // Update radius label
-        function updateRadiusLabel() {
-            const value = document.getElementById('radius').value;
-            document.getElementById('radiusLabel').textContent = radiusPresets[value].label;
+      }
+
+      // Convert incidents to CSV (for Excel)
+      function incidentsToCSV(incidents) {
+        if (!incidents || incidents.length === 0) {
+          return "No data";
         }
 
-        // Update reliability label
-        function updateReliabilityLabel() {
-            const value = document.getElementById('reliabilityThreshold').value;
-            document.getElementById('reliabilityLabel').textContent = `${value}/10`;
-        }
-        
-        // Initialize map
-        function initMap() {
-            map = L.map('map').setView([43.69, -70.27], 11);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
-            
-            markersLayer = L.layerGroup().addTo(map);
-            
-            // Listen for zoom changes
-            map.on('zoomend', updateVisualization);
-        }
-        
-        // Load incidents from JSON
-        function loadIncidents(incidents) {
-            allIncidents = incidents;
-            updateIncidentTypeFilter();
-            updateDateRange();
-            filterIncidents();
-        }
-        
-        // Update incident type filter dropdown
-        function updateIncidentTypeFilter() {
-            const select = document.getElementById('incidentType');
-            const types = new Set();
-            
-            allIncidents.forEach(incident => {
-                if (incident.type) types.add(incident.type);
-            });
-            
-            select.innerHTML = '<option value="all">All Types</option>';
-            
-            Array.from(types).sort().forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type;
-                select.appendChild(option);
-            });
-            
-            select.onchange = filterIncidents;
-        }
-        
-        // Update date range display
-        function updateDateRange() {
-            if (allIncidents.length === 0) {
-                document.getElementById('dateRange').textContent = '-';
-                return;
-            }
-            
-            const timestamps = allIncidents
-                .filter(i => i.timestamp)
-                .map(i => new Date(i.timestamp).getTime());
-            
-            if (timestamps.length === 0) {
-                document.getElementById('dateRange').textContent = '-';
-                return;
-            }
-            
-            const minDate = new Date(Math.min(...timestamps));
-            const maxDate = new Date(Math.max(...timestamps));
-            
-            document.getElementById('dateRange').textContent = 
-                `${minDate.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`;
-        }
-        
-        // Set up date filter listeners
-        function setupDateFilters() {
-            document.getElementById('dateFrom').addEventListener('change', filterIncidents);
-            document.getElementById('dateTo').addEventListener('change', filterIncidents);
-            
-            // Quick filter buttons
-            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Update active state
-                    document.querySelectorAll('.quick-filter-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const period = this.dataset.period;
-                    const now = new Date();
-                    let fromDate = null;
-                    
-                    if (period === '1h') {
-                        fromDate = new Date(now.getTime() - 60 * 60 * 1000);
-                    } else if (period === '6h') {
-                        fromDate = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                    } else if (period === '24h') {
-                        fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    } else if (period === '7d') {
-                        fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    }
-                    
-                    if (fromDate) {
-                        document.getElementById('dateFrom').value = formatDateTimeLocal(fromDate);
-                        document.getElementById('dateTo').value = formatDateTimeLocal(now);
-                    } else {
-                        document.getElementById('dateFrom').value = '';
-                        document.getElementById('dateTo').value = '';
-                    }
-                    
-                    filterIncidents();
-                });
-            });
-        }
-        
-        // Format date for datetime-local input
-        function formatDateTimeLocal(date) {
-            const pad = n => n.toString().padStart(2, '0');
-            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-        }
-        
-        // Filter incidents by type and date
-        function filterIncidents() {
-            const selectedType = document.getElementById('incidentType').value;
-            const dateFrom = document.getElementById('dateFrom').value;
-            const dateTo = document.getElementById('dateTo').value;
-            const reliabilityThreshold = parseInt(document.getElementById('reliabilityThreshold').value, 10);
-            
-            filteredIncidents = allIncidents.filter(incident => {
-                // Reliability filter (default to 10 if missing to be safe, or 0? Usually 5 is good middle ground)
-                const reliability = incident.reliability !== undefined ? incident.reliability : 5;
-                if (reliability < reliabilityThreshold) {
-                    return false;
-                }
+        const headers = [
+          "id",
+          "type",
+          "subtype",
+          "street",
+          "city",
+          "country",
+          "lat",
+          "lng",
+          "reliability",
+          "reportRating",
+          "pubMillis",
+          "timestamp",
+          "description",
+        ];
 
-                // Type filter
-                if (selectedType !== 'all' && incident.type !== selectedType) {
-                    return false;
-                }
-                
-                // Date filter
-                if (incident.timestamp) {
-                    const incidentDate = new Date(incident.timestamp);
-                    
-                    if (dateFrom) {
-                        const fromDate = new Date(dateFrom);
-                        if (incidentDate < fromDate) return false;
-                    }
-                    
-                    if (dateTo) {
-                        const toDate = new Date(dateTo);
-                        if (incidentDate > toDate) return false;
-                    }
-                }
-                
-                return true;
-            });
-            
-            updateStats();
-            updateVisualization();
-            
-            // Auto-fit map if we have data and it's the first load
-            if (filteredIncidents.length > 0 && !map._loaded) {
-                const bounds = L.latLngBounds(
-                    filteredIncidents.map(incident => [incident.lat, incident.lng])
-                );
-                map.fitBounds(bounds, { padding: [50, 50] });
-                map._loaded = true;
-            }
+        const escape = (value) => {
+          if (value === null || value === undefined) return "";
+          const str = String(value);
+          if (str.includes('"') || str.includes(",") || str.includes("\n")) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        };
+
+        const rows = [];
+        rows.push(headers.join(","));
+
+        incidents.forEach((incident) => {
+          rows.push(
+            [
+              incident.uuid || "",
+              incident.type || "",
+              incident.subtype || "",
+              incident.street || "",
+              incident.city || "",
+              incident.country || "",
+              incident.lat,
+              incident.lng,
+              incident.reliability,
+              incident.reportRating,
+              incident.pubMillis,
+              incident.timestamp || "",
+              incident.description || "",
+            ]
+              .map(escape)
+              .join(",")
+          );
+        });
+
+        return rows.join("\n");
+      }
+
+      // Download current (filtered) incidents as CSV for Excel
+      function downloadIncidents() {
+        const data =
+          filteredIncidents && filteredIncidents.length > 0
+            ? filteredIncidents
+            : allIncidents;
+        if (!data || data.length === 0) {
+          alert("No incidents to download.");
+          return;
         }
-        
-        // Update visualization based on zoom level
-        function updateVisualization() {
-            const currentZoom = map.getZoom();
-            const heatmapLegend = document.getElementById('heatmapLegend');
-            const markerLegend = document.getElementById('markerLegend');
-            const viewMode = document.getElementById('viewMode');
-            const viewHint = document.getElementById('viewHint');
-            
-            if (currentZoom >= MARKER_ZOOM_THRESHOLD) {
-                // Show individual markers
-                if (heatLayer) {
-                    map.removeLayer(heatLayer);
-                    heatLayer = null;
-                }
-                updateMarkers();
-                
-                heatmapLegend.style.display = 'none';
-                markerLegend.style.display = 'block';
-                viewMode.textContent = '📍 Individual Incidents';
-                viewHint.textContent = 'Click markers for details';
+
+        const csv = incidentsToCSV(data);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const timestamp = new Date()
+          .toISOString()
+          .replace(/[:T]/g, "-")
+          .split(".")[0];
+        a.href = url;
+        a.download = `waze_incidents_${timestamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // Update radius label
+      function updateRadiusLabel() {
+        const value = document.getElementById("radius").value;
+        document.getElementById("radiusLabel").textContent =
+          radiusPresets[value].label;
+      }
+
+      // Update reliability label
+      function updateReliabilityLabel() {
+        const value = document.getElementById("reliabilityThreshold").value;
+        document.getElementById("reliabilityLabel").textContent = `${value}/10`;
+      }
+
+      // Initialize map
+      function initMap() {
+        map = L.map("map").setView([43.69, -70.27], 11);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+          maxZoom: 19,
+        }).addTo(map);
+
+        markersLayer = L.layerGroup().addTo(map);
+
+        // Listen for zoom changes
+        map.on("zoomend", updateVisualization);
+      }
+
+      // Load incidents from JSON
+      function loadIncidents(incidents) {
+        allIncidents = incidents;
+        updateIncidentTypeFilter();
+        updateIncidentSubtypeFilter();
+        updateDateRange();
+        filterIncidents();
+      }
+
+      // Update incident type filter dropdown
+      function updateIncidentTypeFilter() {
+        const select = document.getElementById("incidentType");
+        const types = new Set();
+
+        allIncidents.forEach((incident) => {
+          if (incident.type) types.add(incident.type);
+        });
+
+        select.innerHTML = '<option value="all">All Types</option>';
+
+        Array.from(types)
+          .sort()
+          .forEach((type) => {
+            const option = document.createElement("option");
+            option.value = type;
+            option.textContent = type;
+            select.appendChild(option);
+          });
+      }
+
+      // Update incident subtype filter dropdown
+      function updateIncidentSubtypeFilter() {
+        const typeSelect = document.getElementById("incidentType");
+        const subtypeSelect = document.getElementById("incidentSubtype");
+
+        const selectedType = typeSelect.value;
+        const subtypes = new Set();
+
+        allIncidents.forEach((incident) => {
+          // If "All Types" is selected, show all subtypes.
+          // If a specific type is selected, only show subtypes for that type.
+          if (selectedType === "all" || incident.type === selectedType) {
+            if (incident.subtype) {
+              subtypes.add(incident.subtype);
+            }
+          }
+        });
+
+        // Store current selection if possible
+        const currentSubtype = subtypeSelect.value;
+
+        subtypeSelect.innerHTML = '<option value="all">All Subtypes</option>';
+
+        Array.from(subtypes)
+          .sort()
+          .forEach((subtype) => {
+            const option = document.createElement("option");
+            option.value = subtype;
+            option.textContent = subtype.replace(/_/g, " "); // Make it prettier
+            subtypeSelect.appendChild(option);
+          });
+
+        // Restore selection if it still exists in the new list, otherwise default to all
+        if (
+          [...subtypeSelect.options].some((o) => o.value === currentSubtype)
+        ) {
+          subtypeSelect.value = currentSubtype;
+        } else {
+          subtypeSelect.value = "all";
+        }
+      }
+
+      // Update date range display
+      function updateDateRange() {
+        if (allIncidents.length === 0) {
+          document.getElementById("dateRange").textContent = "-";
+          return;
+        }
+
+        const timestamps = allIncidents
+          .filter((i) => i.timestamp)
+          .map((i) => new Date(i.timestamp).getTime());
+
+        if (timestamps.length === 0) {
+          document.getElementById("dateRange").textContent = "-";
+          return;
+        }
+
+        const minDate = new Date(Math.min(...timestamps));
+        const maxDate = new Date(Math.max(...timestamps));
+
+        document.getElementById(
+          "dateRange"
+        ).textContent = `${minDate.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`;
+      }
+
+      // Set up date filter listeners
+      function setupDateFilters() {
+        document
+          .getElementById("dateFrom")
+          .addEventListener("change", filterIncidents);
+        document
+          .getElementById("dateTo")
+          .addEventListener("change", filterIncidents);
+
+        // Quick filter buttons
+        document.querySelectorAll(".quick-filter-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            // Update active state
+            document
+              .querySelectorAll(".quick-filter-btn")
+              .forEach((b) => b.classList.remove("active"));
+            this.classList.add("active");
+
+            const period = this.dataset.period;
+            const now = new Date();
+            let fromDate = null;
+
+            if (period === "1h") {
+              fromDate = new Date(now.getTime() - 60 * 60 * 1000);
+            } else if (period === "6h") {
+              fromDate = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+            } else if (period === "24h") {
+              fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            } else if (period === "7d") {
+              fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            }
+
+            if (fromDate) {
+              document.getElementById("dateFrom").value =
+                formatDateTimeLocal(fromDate);
+              document.getElementById("dateTo").value =
+                formatDateTimeLocal(now);
             } else {
-                // Show heatmap
-                markersLayer.clearLayers();
-                updateHeatmap();
-                
-                heatmapLegend.style.display = 'block';
-                markerLegend.style.display = 'none';
-                viewMode.textContent = '🔥 Heatmap View';
-                viewHint.textContent = 'Zoom in to see individual incidents';
+              document.getElementById("dateFrom").value = "";
+              document.getElementById("dateTo").value = "";
             }
+
+            filterIncidents();
+          });
+        });
+      }
+
+      // Format date for datetime-local input
+      function formatDateTimeLocal(date) {
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+          date.getDate()
+        )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
+
+      // Filter incidents by type and date
+      function filterIncidents() {
+        const selectedType = document.getElementById("incidentType").value;
+        const dateFrom = document.getElementById("dateFrom").value;
+        const dateTo = document.getElementById("dateTo").value;
+        const reliabilityThreshold = parseInt(
+          document.getElementById("reliabilityThreshold").value,
+          10
+        );
+
+        filteredIncidents = allIncidents.filter((incident) => {
+          // Reliability filter (default to 10 if missing to be safe, or 0? Usually 5 is good middle ground)
+          const reliability =
+            incident.reliability !== undefined ? incident.reliability : 5;
+          if (reliability < reliabilityThreshold) {
+            return false;
+          }
+
+          // Type filter
+          if (selectedType !== "all" && incident.type !== selectedType) {
+            return false;
+          }
+
+          // Subtype filter
+          const selectedSubtype = document.getElementById("incidentSubtype").value;
+          if (
+            selectedSubtype !== "all" &&
+            incident.subtype !== selectedSubtype
+          ) {
+            return false;
+          }
+
+          // Date filter
+          if (incident.timestamp) {
+            const incidentDate = new Date(incident.timestamp);
+
+            if (dateFrom) {
+              const fromDate = new Date(dateFrom);
+              if (incidentDate < fromDate) return false;
+            }
+
+            if (dateTo) {
+              const toDate = new Date(dateTo);
+              if (incidentDate > toDate) return false;
+            }
+          }
+
+          return true;
+        });
+
+        updateStats();
+        updateVisualization();
+
+        // Auto-fit map if we have data and it's the first load
+        if (filteredIncidents.length > 0 && !map._loaded) {
+          const bounds = L.latLngBounds(
+            filteredIncidents.map((incident) => [incident.lat, incident.lng])
+          );
+          map.fitBounds(bounds, { padding: [50, 50] });
+          map._loaded = true;
         }
-        
-        // Update individual markers
-        function updateMarkers() {
-            markersLayer.clearLayers();
-            
-            if (filteredIncidents.length === 0) return;
-            
-            filteredIncidents.forEach(incident => {
-                const icon = createIncidentIcon(incident.type);
-                const marker = L.marker([incident.lat, incident.lng], { icon: icon });
-                
-                // Determine reliability color
-                const r = incident.reliability || 0;
-                let relColor = '#e74c3c'; // red (low)
-                if (r >= 7) relColor = '#2ecc71'; // green (high)
-                else if (r >= 4) relColor = '#f39c12'; // orange (medium)
-                
-                const popupContent = `
+      }
+
+      // Update visualization based on zoom level
+      function updateVisualization() {
+        const currentZoom = map.getZoom();
+        const heatmapLegend = document.getElementById("heatmapLegend");
+        const markerLegend = document.getElementById("markerLegend");
+        const viewMode = document.getElementById("viewMode");
+        const viewHint = document.getElementById("viewHint");
+
+        if (currentZoom >= MARKER_ZOOM_THRESHOLD) {
+          // Show individual markers
+          if (heatLayer) {
+            map.removeLayer(heatLayer);
+            heatLayer = null;
+          }
+          updateMarkers();
+
+          heatmapLegend.style.display = "none";
+          markerLegend.style.display = "block";
+          viewMode.textContent = "📍 Individual Incidents";
+          viewHint.textContent = "Click markers for details";
+        } else {
+          // Show heatmap
+          markersLayer.clearLayers();
+          updateHeatmap();
+
+          heatmapLegend.style.display = "block";
+          markerLegend.style.display = "none";
+          viewMode.textContent = "🔥 Heatmap View";
+          viewHint.textContent = "Zoom in to see individual incidents";
+        }
+      }
+
+      // Update individual markers
+      function updateMarkers() {
+        markersLayer.clearLayers();
+
+        if (filteredIncidents.length === 0) return;
+
+        filteredIncidents.forEach((incident) => {
+          const icon = createIncidentIcon(incident.type);
+          const marker = L.marker([incident.lat, incident.lng], { icon: icon });
+
+          // Determine reliability color
+          const r = incident.reliability || 0;
+          let relColor = "#e74c3c"; // red (low)
+          if (r >= 7) relColor = "#2ecc71"; // green (high)
+          else if (r >= 4) relColor = "#f39c12"; // orange (medium)
+
+          const popupContent = `
                     <div style="min-width: 200px; font-family: 'Segoe UI', sans-serif;">
-                        <h3 style="margin: 0 0 8px 0; color: ${incidentColors[incident.type] || incidentColors['default']}; font-size: 14px;">
-                            ${incident.type || 'Unknown'}
-                            ${incident.subtype ? `<br><small style="color: #666; font-weight: normal;">${incident.subtype}</small>` : ''}
+                        <h3 style="margin: 0 0 8px 0; color: ${
+                          incidentColors[incident.type] ||
+                          incidentColors["default"]
+                        }; font-size: 14px;">
+                            ${incident.type || "Unknown"}
+                            ${
+                              incident.subtype
+                                ? `<br><small style="color: #666; font-weight: normal;">${incident.subtype}</small>`
+                                : ""
+                            }
                         </h3>
                         <div style="font-size: 12px; line-height: 1.6;">
                             <div style="display: flex; align-items: center; margin-bottom: 4px;">
                                 <span style="font-weight: 600; margin-right: 5px;">Reliability:</span>
                                 <span style="background: ${relColor}; color: white; padding: 1px 6px; border-radius: 10px; font-size: 10px;">${r}/10</span>
                             </div>
-                            ${incident.street ? `<div><strong>📍</strong> ${incident.street}</div>` : ''}
-                            ${incident.city ? `<div><strong>🏙️</strong> ${incident.city}</div>` : ''}
-                            ${incident.timestamp ? `<div><strong>🕐</strong> ${formatTimestamp(incident.timestamp)}</div>` : ''}
-                            ${incident.uuid ? `<div><strong>ID</strong> ${incident.uuid}</div>` : ''}
+                            ${
+                              incident.street
+                                ? `<div><strong>📍</strong> ${incident.street}</div>`
+                                : ""
+                            }
+                            ${
+                              incident.city
+                                ? `<div><strong>🏙️</strong> ${incident.city}</div>`
+                                : ""
+                            }
+                            ${
+                              incident.timestamp
+                                ? `<div><strong>🕐</strong> ${formatTimestamp(
+                                    incident.timestamp
+                                  )}</div>`
+                                : ""
+                            }
+                            ${
+                              incident.uuid
+                                ? `<div><strong>ID</strong> ${incident.uuid}</div>`
+                                : ""
+                            }
                         </div>
                     </div>
                 `;
-                
-                marker.bindPopup(popupContent);
-                markersLayer.addLayer(marker);
-            });
-        }
-        
-        // Update heatmap layer
-        function updateHeatmap() {
-            if (heatLayer) {
-                map.removeLayer(heatLayer);
-            }
-            
-            if (filteredIncidents.length === 0) return;
-            
-            const radiusValue = document.getElementById('radius').value;
-            const preset = radiusPresets[radiusValue];
-            
-            const heatData = filteredIncidents.map(incident => [
-                incident.lat,
-                incident.lng,
-                1.0
-            ]);
-            
-            heatLayer = L.heatLayer(heatData, {
-                radius: preset.radius,
-                blur: preset.blur,
-                maxZoom: 17,
-                max: 1.0,
-                gradient: {
-                    0.0: 'blue',
-                    0.25: 'cyan',
-                    0.5: 'lime',
-                    0.75: 'yellow',
-                    1.0: 'red'
-                },
-                minOpacity: 0.4
-            }).addTo(map);
-        }
-        
-        // Update statistics
-        function updateStats() {
-            document.getElementById('totalIncidents').textContent = allIncidents.length;
-            document.getElementById('displayedIncidents').textContent = filteredIncidents.length;
-        }
-        
-        // Load latest data
-        async function loadDefaultData() {
-            try {
-                let response = await fetch('data/incidents_latest.json?t=' + Date.now());
-                
-                if (!response.ok) {
-                    response = await fetch('data/incidents_master.json?t=' + Date.now());
-                }
-                
-                if (!response.ok) {
-                    throw new Error('No data file found. Make sure run.py is running.');
-                }
-                
-                const incidents = await response.json();
-                loadIncidents(incidents);
-                
-                // Update timestamp
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
-                
-            } catch (e) {
-                console.error('Error loading data:', e);
-                document.getElementById('lastUpdated').textContent = 'Error loading data';
-            }
-        }
-        
-        // Auto-refresh functionality
-        function toggleAutoRefresh() {
-            const btn = document.getElementById('autoRefreshBtn');
-            
-            if (autoRefreshInterval) {
-                // Stop
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-                btn.innerHTML = '▶ Start Auto-Refresh';
-                btn.style.background = '#2196F3';
-            } else {
-                // Start
-                loadDefaultData(); // Load immediately
-                autoRefreshInterval = setInterval(loadDefaultData, 60000); // And every minute
-                btn.innerHTML = '⏹ Stop Auto-Refresh';
-                btn.style.background = '#e74c3c';
-            }
-        }
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            initMap();
-            loadDefaultData();
-            setupDateFilters();
+
+          marker.bindPopup(popupContent);
+          markersLayer.addLayer(marker);
         });
+      }
+
+      // Update heatmap layer
+      function updateHeatmap() {
+        if (heatLayer) {
+          map.removeLayer(heatLayer);
+        }
+
+        if (filteredIncidents.length === 0) return;
+
+        const radiusValue = document.getElementById("radius").value;
+        const preset = radiusPresets[radiusValue];
+
+        const heatData = filteredIncidents.map((incident) => [
+          incident.lat,
+          incident.lng,
+          1.0,
+        ]);
+
+        heatLayer = L.heatLayer(heatData, {
+          radius: preset.radius,
+          blur: preset.blur,
+          maxZoom: 17,
+          max: 1.0,
+          gradient: {
+            0.0: "blue",
+            0.25: "cyan",
+            0.5: "lime",
+            0.75: "yellow",
+            1.0: "red",
+          },
+          minOpacity: 0.4,
+        }).addTo(map);
+      }
+
+      // Update statistics
+      function updateStats() {
+        document.getElementById("totalIncidents").textContent =
+          allIncidents.length;
+        document.getElementById("displayedIncidents").textContent =
+          filteredIncidents.length;
+      }
+
+      // Load latest data
+      async function loadDefaultData() {
+        try {
+          let response = await fetch(
+            "data/incidents_latest.json?t=" + Date.now()
+          );
+
+          if (!response.ok) {
+            response = await fetch(
+              "data/incidents_master.json?t=" + Date.now()
+            );
+          }
+
+          if (!response.ok) {
+            throw new Error("No data file found. Make sure run.py is running.");
+          }
+
+          const incidents = await response.json();
+          loadIncidents(incidents);
+
+          // Update timestamp
+          document.getElementById("lastUpdated").textContent =
+            new Date().toLocaleTimeString();
+        } catch (e) {
+          console.error("Error loading data:", e);
+          document.getElementById("lastUpdated").textContent =
+            "Error loading data";
+        }
+      }
+
+      // Auto-refresh functionality
+      function toggleAutoRefresh() {
+        const btn = document.getElementById("autoRefreshBtn");
+
+        if (autoRefreshInterval) {
+          // Stop
+          clearInterval(autoRefreshInterval);
+          autoRefreshInterval = null;
+          btn.innerHTML = "▶ Start Auto-Refresh";
+          btn.style.background = "#2196F3";
+        } else {
+          // Start
+          loadDefaultData(); // Load immediately
+          autoRefreshInterval = setInterval(loadDefaultData, 60000); // And every minute
+          btn.innerHTML = "⏹ Stop Auto-Refresh";
+          btn.style.background = "#e74c3c";
+        }
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        initMap();
+        loadDefaultData();
+        setupDateFilters();
+      });
     </script>
-</body>
+  </body>
 </html>
