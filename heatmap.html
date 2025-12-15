@@ -248,6 +248,12 @@
         </div>
         
         <div class="control-group">
+            <label>Min. Reliability: <span id="reliabilityLabel">5/10</span></label>
+            <input type="range" id="reliabilityThreshold" min="0" max="10" value="5" step="1" oninput="updateReliabilityLabel(); filterIncidents();" />
+            <div style="font-size: 10px; color: #888; margin-top: 2px;">Filters out low-confidence reports</div>
+        </div>
+        
+        <div class="control-group">
             <label>Time Period:</label>
             <div class="date-row">
                 <div>
@@ -528,6 +534,12 @@
             const value = document.getElementById('radius').value;
             document.getElementById('radiusLabel').textContent = radiusPresets[value].label;
         }
+
+        // Update reliability label
+        function updateReliabilityLabel() {
+            const value = document.getElementById('reliabilityThreshold').value;
+            document.getElementById('reliabilityLabel').textContent = `${value}/10`;
+        }
         
         // Initialize map
         function initMap() {
@@ -646,8 +658,15 @@
             const selectedType = document.getElementById('incidentType').value;
             const dateFrom = document.getElementById('dateFrom').value;
             const dateTo = document.getElementById('dateTo').value;
+            const reliabilityThreshold = parseInt(document.getElementById('reliabilityThreshold').value, 10);
             
             filteredIncidents = allIncidents.filter(incident => {
+                // Reliability filter (default to 10 if missing to be safe, or 0? Usually 5 is good middle ground)
+                const reliability = incident.reliability !== undefined ? incident.reliability : 5;
+                if (reliability < reliabilityThreshold) {
+                    return false;
+                }
+
                 // Type filter
                 if (selectedType !== 'all' && incident.type !== selectedType) {
                     return false;
@@ -726,6 +745,12 @@
                 const icon = createIncidentIcon(incident.type);
                 const marker = L.marker([incident.lat, incident.lng], { icon: icon });
                 
+                // Determine reliability color
+                const r = incident.reliability || 0;
+                let relColor = '#e74c3c'; // red (low)
+                if (r >= 7) relColor = '#2ecc71'; // green (high)
+                else if (r >= 4) relColor = '#f39c12'; // orange (medium)
+                
                 const popupContent = `
                     <div style="min-width: 200px; font-family: 'Segoe UI', sans-serif;">
                         <h3 style="margin: 0 0 8px 0; color: ${incidentColors[incident.type] || incidentColors['default']}; font-size: 14px;">
@@ -733,6 +758,10 @@
                             ${incident.subtype ? `<br><small style="color: #666; font-weight: normal;">${incident.subtype}</small>` : ''}
                         </h3>
                         <div style="font-size: 12px; line-height: 1.6;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 600; margin-right: 5px;">Reliability:</span>
+                                <span style="background: ${relColor}; color: white; padding: 1px 6px; border-radius: 10px; font-size: 10px;">${r}/10</span>
+                            </div>
                             ${incident.street ? `<div><strong>📍</strong> ${incident.street}</div>` : ''}
                             ${incident.city ? `<div><strong>🏙️</strong> ${incident.city}</div>` : ''}
                             ${incident.timestamp ? `<div><strong>🕐</strong> ${formatTimestamp(incident.timestamp)}</div>` : ''}
@@ -801,77 +830,40 @@
                 const incidents = await response.json();
                 loadIncidents(incidents);
                 
-                // Update last updated timestamp from the newest incident
-                updateLastUpdated(incidents);
-            } catch (error) {
-                console.error('Error loading data:', error);
-                if (!autoRefreshInterval) {
-                    alert('Error loading data: ' + error.message);
-                }
+                // Update timestamp
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+                
+            } catch (e) {
+                console.error('Error loading data:', e);
+                document.getElementById('lastUpdated').textContent = 'Error loading data';
             }
         }
         
-        // Update the "Last Updated" display
-        function updateLastUpdated(incidents) {
-            const el = document.getElementById('lastUpdated');
-            if (!incidents || incidents.length === 0) {
-                el.textContent = 'No data';
-                return;
-            }
-            
-            // Find the most recent timestamp
-            const timestamps = incidents
-                .filter(i => i.timestamp)
-                .map(i => new Date(i.timestamp).getTime());
-            
-            if (timestamps.length === 0) {
-                el.textContent = 'Unknown';
-                return;
-            }
-            
-            const latestTime = new Date(Math.max(...timestamps));
-            const now = new Date();
-            const diffMs = now - latestTime;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            
-            let relativeTime;
-            if (diffMins < 1) {
-                relativeTime = 'Just now';
-            } else if (diffMins < 60) {
-                relativeTime = `${diffMins} min ago`;
-            } else if (diffHours < 24) {
-                relativeTime = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-            } else {
-                relativeTime = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-            }
-            
-            el.innerHTML = `${relativeTime}<br><span style="font-size: 10px; color: #666; font-weight: normal;">${latestTime.toLocaleString()}</span>`;
-        }
-        
-        // Toggle auto-refresh
+        // Auto-refresh functionality
         function toggleAutoRefresh() {
             const btn = document.getElementById('autoRefreshBtn');
             
             if (autoRefreshInterval) {
+                // Stop
                 clearInterval(autoRefreshInterval);
                 autoRefreshInterval = null;
-                btn.textContent = '▶ Start Auto-Refresh';
+                btn.innerHTML = '▶ Start Auto-Refresh';
                 btn.style.background = '#2196F3';
             } else {
-                loadDefaultData();
-                autoRefreshInterval = setInterval(loadDefaultData, 30000); // Every 30 seconds
-                btn.textContent = '⏸ Stop Auto-Refresh';
-                btn.style.background = '#f44336';
+                // Start
+                loadDefaultData(); // Load immediately
+                autoRefreshInterval = setInterval(loadDefaultData, 60000); // And every minute
+                btn.innerHTML = '⏹ Stop Auto-Refresh';
+                btn.style.background = '#e74c3c';
             }
         }
         
         // Initialize
-        initMap();
-        setupDateFilters();
-        updateRadiusLabel();
-        loadDefaultData();
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadDefaultData();
+            setupDateFilters();
+        });
     </script>
 </body>
 </html>
