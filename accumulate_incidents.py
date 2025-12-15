@@ -99,8 +99,11 @@ class IncidentAccumulator:
                 self.master_incidents = incidents
                 print(f"✓ Loaded {len(self.master_incidents)} existing incidents from GitHub Gist", flush=True)
             else:
-                self.master_incidents = []
-                print("⚠ Failed to load from Gist, starting fresh")
+                if not self.master_incidents:
+                    self.master_incidents = []
+                    print("⚠ Failed to load from Gist, starting fresh", flush=True)
+                else:
+                    print("⚠ Failed to reload from Gist, keeping valid in-memory data", flush=True)
         else:
             # File storage mode
             if os.path.exists(self.master_file):
