@@ -50,11 +50,20 @@ class IncidentAccumulator:
             response.raise_for_status()
             
             gist_data = response.json()
-            # Gist files are stored in a dict, get the first file
             files = gist_data.get('files', {})
             if files:
-                file_content = list(files.values())[0].get('content', '[]')
-                return json.loads(file_content)
+                file_obj = list(files.values())[0]
+                # If truncated or content missing, fetch from raw_url
+                if file_obj.get('truncated', False) or not file_obj.get('content'):
+                    print("  File truncated in API, fetching raw content...", flush=True)
+                    raw_url = file_obj.get('raw_url')
+                    if raw_url:
+                        raw_response = requests.get(raw_url, timeout=30)
+                        raw_response.raise_for_status()
+                        return raw_response.json()
+                
+                # Otherwise use embedded content
+                return json.loads(file_obj.get('content', '[]'))
             return []
         except Exception as e:
             print(f"Error loading from Gist: {e}")
