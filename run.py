@@ -47,9 +47,10 @@ def run_server(port=None):
     with socketserver.TCPServer(("", port), handler) as httpd:
         # Don't try to open browser in cloud environments
         if not os.environ.get('RENDER'):
-            print(f"Server running at http://localhost:{port}/heatmap.html")
+            print(f"Server running at http://localhost:{port}/heatmap.html", flush=True)
         else:
-            print(f"Server running on port {port}")
+            print(f"Server running on port {port}", flush=True)
+
         httpd.serve_forever()
 
 
@@ -59,7 +60,8 @@ def run_fetcher(api_url: str, interval: int, accumulator: IncidentAccumulator, f
         try:
             # Use UTC for consistency (Render servers use UTC)
             timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-            print(f"\n[{timestamp}] Fetching incidents...")
+            print(f"\n[{timestamp}] Fetching incidents...", flush=True)
+
             
             data = fetcher.fetch_data()
             if data is None:
@@ -70,12 +72,14 @@ def run_fetcher(api_url: str, interval: int, accumulator: IncidentAccumulator, f
             new_incidents = fetcher.extract_incidents(data)
             result = accumulator.add_incidents(new_incidents)
             
-            print(f"  Fetched: {len(new_incidents)} | New: {result['new']} | Duplicates: {result['duplicates']} | Total: {result['total']}")
+            print(f"  Fetched: {len(new_incidents)} | New: {result['new']} | Duplicates: {result['duplicates']} | Total: {result['total']}", flush=True)
+
             
             accumulator.save_master()
             
         except Exception as e:
-            print(f"  Error: {e}")
+            print(f"  Error: {e}", flush=True)
+
         
         time.sleep(interval)
 
@@ -109,12 +113,13 @@ def main():
     accumulator = IncidentAccumulator()
     fetcher = WazeDataFetcher(api_url)
     
-    print("=" * 50)
-    print("Waze Incidents Heatmap Server")
-    print("=" * 50)
-    print(f"Fetch interval: {interval} seconds")
-    print(f"Existing incidents: {len(accumulator.master_incidents)}")
-    print("=" * 50)
+    print("=" * 50, flush=True)
+    print("Waze Incidents Heatmap Server", flush=True)
+    print("=" * 50, flush=True)
+    print(f"Fetch interval: {interval} seconds", flush=True)
+    print(f"Existing incidents: {len(accumulator.master_incidents)}", flush=True)
+    print("=" * 50, flush=True)
+
     
     # Start fetcher thread
     fetcher_thread = threading.Thread(

@@ -29,12 +29,12 @@ class IncidentAccumulator:
         # Check if GitHub Gist should be used
         if self.github_token and self.gist_id:
             self.use_gist = True
-            print("✓ GitHub Gist configured - using persistent cloud storage")
+            print("✓ GitHub Gist configured - using persistent cloud storage", flush=True)
         else:
             self.use_gist = False
             if os.environ.get('RENDER'):
-                print("⚠ Using file storage (data will be lost on restart)")
-                print("  Set GITHUB_TOKEN and GIST_ID for persistent storage")
+                print("⚠ Using file storage (data will be lost on restart)", flush=True)
+                print("  Set GITHUB_TOKEN and GIST_ID for persistent storage", flush=True)
         
         self.load_master()
     
@@ -97,7 +97,7 @@ class IncidentAccumulator:
             incidents = self._load_from_gist()
             if incidents is not None:
                 self.master_incidents = incidents
-                print(f"✓ Loaded {len(self.master_incidents)} existing incidents from GitHub Gist")
+                print(f"✓ Loaded {len(self.master_incidents)} existing incidents from GitHub Gist", flush=True)
             else:
                 self.master_incidents = []
                 print("⚠ Failed to load from Gist, starting fresh")
