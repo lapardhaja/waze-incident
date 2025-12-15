@@ -61,11 +61,7 @@ def run_fetcher(api_url: str, interval: int, accumulator: IncidentAccumulator, f
             # Use UTC for consistency (Render servers use UTC)
             timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
             
-            # Reload from Gist to ensure we have the latest source of truth
-            print(f"\n[{timestamp}] Reloading master incidents...", flush=True)
-            accumulator.load_master()
-            
-            print(f"[{timestamp}] Fetching incidents...", flush=True)
+            print(f"\n[{timestamp}] Fetching incidents...", flush=True)
 
             
             data = fetcher.fetch_data()
